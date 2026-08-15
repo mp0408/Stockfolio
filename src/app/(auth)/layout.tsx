@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Sign In",
-};
+
 
 /**
  * Auth layout — centered card on a warm split-screen background.
