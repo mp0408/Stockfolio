@@ -1,26 +1,233 @@
 @import "tailwindcss";
 
+/* ============================================================
+   STOCKFOLIO DESIGN SYSTEM
+   Premium B2B SaaS palette — warm, confident, art-directed.
+   ============================================================ */
+
+/* ---------- Light mode (default) ---------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surface / Background */
+  --background: #FAFAF8;
+  --foreground: #1A1A1A;
+  --surface: #FFFFFF;
+  --surface-secondary: #F5F5F3;
+  --surface-elevated: #FFFFFF;
+
+  /* Border & Divider */
+  --border: #E8E8E4;
+  --border-hover: #D4D4CF;
+
+  /* Text hierarchy */
+  --text-primary: #1A1A1A;
+  --text-secondary: #6B6B66;
+  --text-tertiary: #9C9C96;
+  --text-inverse: #FAFAF8;
+
+  /* Accent — deep teal */
+  --accent: #1A7A6D;
+  --accent-hover: #15665B;
+  --accent-light: #E6F5F2;
+  --accent-foreground: #FFFFFF;
+
+  /* Status — muted, accessible */
+  --status-in-stock: #4A8C5C;
+  --status-in-stock-bg: #EDF5EF;
+  --status-in-stock-border: #C8DFC9;
+
+  --status-low-stock: #B8860B;
+  --status-low-stock-bg: #FDF6E3;
+  --status-low-stock-border: #E8D5A0;
+
+  --status-out-of-stock: #B94A48;
+  --status-out-of-stock-bg: #FDEDED;
+  --status-out-of-stock-border: #E8C0BF;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+  /* Toast / Overlay */
+  --overlay: rgba(0, 0, 0, 0.4);
+  --toast-bg: #1A1A1A;
+  --toast-fg: #FAFAF8;
+
+  /* Skeleton */
+  --skeleton: #EDEDEA;
+  --skeleton-shimmer: #F5F5F3;
 }
 
+/* ---------- Dark mode ---------- */
+.dark {
+  --background: #0B0C0E;
+  --foreground: #E8E8E4;
+  --surface: #141517;
+  --surface-secondary: #1C1D20;
+  --surface-elevated: #1F2023;
+
+  --border: #2A2B2E;
+  --border-hover: #3A3B3F;
+
+  --text-primary: #E8E8E4;
+  --text-secondary: #9C9C96;
+  --text-tertiary: #6B6B66;
+  --text-inverse: #0B0C0E;
+
+  --accent: #2DD4B8;
+  --accent-hover: #40E0C8;
+  --accent-light: #0F2A25;
+  --accent-foreground: #0B0C0E;
+
+  --status-in-stock: #6BBF7E;
+  --status-in-stock-bg: #0F2214;
+  --status-in-stock-border: #1E3D24;
+
+  --status-low-stock: #D4A72C;
+  --status-low-stock-bg: #221C08;
+  --status-low-stock-border: #3D3210;
+
+  --status-out-of-stock: #E06060;
+  --status-out-of-stock-bg: #2A0F0F;
+  --status-out-of-stock-border: #3D1C1C;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+
+  --overlay: rgba(0, 0, 0, 0.6);
+  --toast-bg: #E8E8E4;
+  --toast-fg: #0B0C0E;
+
+  --skeleton: #1C1D20;
+  --skeleton-shimmer: #2A2B2E;
+}
+
+/* ---------- Tailwind v4 Theme Tokens ---------- */
 @theme inline {
+  /* Fonts */
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), "SF Mono", "Fira Code", monospace;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+
+  /* Colors mapped to CSS vars for Tailwind classes */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-elevated: var(--surface-elevated);
+
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-light: var(--accent-light);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-status-in-stock: var(--status-in-stock);
+  --color-status-in-stock-bg: var(--status-in-stock-bg);
+  --color-status-low-stock: var(--status-low-stock);
+  --color-status-low-stock-bg: var(--status-low-stock-bg);
+  --color-status-out-of-stock: var(--status-out-of-stock);
+  --color-status-out-of-stock-bg: var(--status-out-of-stock-bg);
+
+  --color-overlay: var(--overlay);
+  --color-skeleton: var(--skeleton);
+
+  /* Border radius scale */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+
+* {
+  border-color: var(--border);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Scrollbar (subtle, premium) ---------- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* ---------- Selection ---------- */
+::selection {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* ---------- Focus ring ---------- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Skeleton shimmer animation ---------- */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton) 25%,
+    var(--skeleton-shimmer) 50%,
+    var(--skeleton) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Transitions ---------- */
+.transition-default {
+  transition: all 150ms ease-out;
+}
+
+.transition-slow {
+  transition: all 200ms ease-out;
+}
+
+/* ---------- Tabular numbers for stock counts ---------- */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
 }
