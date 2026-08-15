@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import localFont from "next/font/local";
 import "./globals.css";
+import { Providers } from "./providers";
 
 /* ── Fonts ──────────────────────────────────────────── */
 
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
 
-        {/* Dark mode script — prevents FOUC by checking localStorage before paint */}
+        {/* Dark mode script — prevents FOUC */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -76,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-full flex flex-col antialiased">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
