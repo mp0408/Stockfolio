@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { DEMO_PRODUCTS } from "@/lib/demo-products";
 import type { Product, ChangeType } from "@/lib/types";
 
 interface UseInventoryReturn {
@@ -22,6 +23,7 @@ interface UseInventoryReturn {
     note?: string
   ) => Promise<{ error: string | null }>;
   deleteProduct: (productId: string) => Promise<{ error: string | null }>;
+  seedDemoProducts: () => Promise<{ count: number; error: string | null }>;
   refetch: () => Promise<void>;
 }
 
@@ -216,6 +218,61 @@ export function useInventory(): UseInventoryReturn {
     [products, supabase]
   );
 
+  /**
+   * Seed 38 demo inventory items into the store.
+   */
+  const seedDemoProducts = useCallback(async (): Promise<{ count: number; error: string | null }> => {
+    if (!profile?.store_id || !user) {
+      return { count: 0, error: "No active store or session found." };
+    }
+
+    setIsLoading(true);
+
+    const { data: existing } = await supabase
+      .from("products")
+      .select("sku")
+      .eq("store_id", profile.store_id);
+
+    const existingSkus = new Set((existing || []).map((p) => p.sku));
+    const toInsert = DEMO_PRODUCTS.filter((p) => !existingSkus.has(p.sku)).map((p) => ({
+      store_id: profile.store_id,
+      name: p.name,
+      sku: p.sku,
+      quantity: p.quantity,
+      low_stock_threshold: p.low_stock_threshold,
+    }));
+
+    if (toInsert.length === 0) {
+      setIsLoading(false);
+      return { count: 0, error: "Demo products are already loaded in this store." };
+    }
+
+    const { data: inserted, error: insertErr } = await supabase
+      .from("products")
+      .insert(toInsert)
+      .select();
+
+    if (insertErr) {
+      setIsLoading(false);
+      return { count: 0, error: insertErr.message };
+    }
+
+    if (inserted && inserted.length > 0) {
+      const logs = inserted.map((p) => ({
+        product_id: p.id,
+        store_id: profile.store_id,
+        change_type: "manual_adjust" as const,
+        quantity_delta: p.quantity,
+        note: "Initial demo inventory load",
+        created_by: user.id,
+      }));
+      await supabase.from("inventory_logs").insert(logs);
+    }
+
+    await fetchProducts();
+    return { count: inserted?.length || 0, error: null };
+  }, [profile?.store_id, user, supabase, fetchProducts]);
+
   return {
     products,
     isLoading,
@@ -223,6 +280,7 @@ export function useInventory(): UseInventoryReturn {
     addProduct,
     updateStock,
     deleteProduct,
+    seedDemoProducts,
     refetch: fetchProducts,
   };
 }

@@ -31,7 +31,7 @@ import {
 type FilterStatus = "all" | StockStatus;
 
 export default function InventoryPage() {
-  const { products, isLoading, error, addProduct, updateStock, deleteProduct } =
+  const { products, isLoading, error, addProduct, updateStock, deleteProduct, seedDemoProducts } =
     useInventory();
   const { toast } = useToast();
   const summary = useStockSummary(products);
@@ -40,6 +40,22 @@ export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const handleSeedDemo = async () => {
+    setIsSeeding(true);
+    const { count, error } = await seedDemoProducts();
+    setIsSeeding(false);
+    if (error) {
+      toast({ type: "error", title: "Could not load demo products", description: error });
+    } else {
+      toast({
+        type: "success",
+        title: "Demo inventory loaded!",
+        description: `Successfully loaded ${count} products into your warehouse.`,
+      });
+    }
+  };
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -256,7 +272,11 @@ export default function InventoryPage() {
       {isLoading ? (
         <InventorySkeleton />
       ) : products.length === 0 ? (
-        <NoProducts onAddProduct={() => setShowAddModal(true)} />
+        <NoProducts
+          onAddProduct={() => setShowAddModal(true)}
+          onSeedDemo={handleSeedDemo}
+          isSeeding={isSeeding}
+        />
       ) : filteredProducts.length === 0 ? (
         <NoResults searchQuery={debouncedSearch} activeFilter={activeFilter} />
       ) : (

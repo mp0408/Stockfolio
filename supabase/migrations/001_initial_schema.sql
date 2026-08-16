@@ -178,3 +178,47 @@ create policy "Users can insert logs for their store"
     store_id = (select store_id from public.profiles where id = auth.uid())
     and created_by = auth.uid()
   );
+
+-- ============================================================
+-- 5. AUTOMATIC PROFILE & STORE CREATION (Trigger)
+-- ============================================================
+
+create or replace function public.handle_new_user()
+returns trigger
+security definer set search_path = public
+language plpgsql
+as $$
+declare
+  default_store_name text;
+  user_full_name text;
+  user_role text;
+  new_store_id uuid;
+begin
+  default_store_name := coalesce(new.raw_user_meta_data->>'store_name', 'My Store');
+  user_full_name := coalesce(new.raw_user_meta_data->>'full_name', split_part(coalesce(new.email, 'user'), '@', 1));
+  user_role := coalesce(new.raw_user_meta_data->>'role', 'manager');
+
+  -- Create default store for the new user
+  insert into public.stores (name, owner_id)
+  values (default_store_name, new.id)
+  returning id into new_store_id;
+
+  -- Create profile linked to the new store
+  insert into public.profiles (id, store_id, full_name, role)
+  values (new.id, new_store_id, user_full_name, user_role)
+  on conflict (id) do update set
+    store_id = coalesce(public.profiles.store_id, excluded.store_id),
+    full_name = coalesce(public.profiles.full_name, excluded.full_name);
+
+  return new;
+exception
+  when others then
+    return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+

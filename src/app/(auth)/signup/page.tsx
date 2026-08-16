@@ -38,16 +38,24 @@ export default function SignupPage() {
   });
 
   const onSubmit = async (data: SignupFormData) => {
-    const { error } = await signUp(data);
+    const { error, needsEmailConfirmation } = await signUp(data);
     if (error) {
       toast({ type: "error", title: "Signup failed", description: error });
+    } else if (needsEmailConfirmation) {
+      toast({
+        type: "success",
+        title: "Check your email",
+        description:
+          "We sent a confirmation link to your email address. Please verify it, then sign in.",
+      });
+      router.push("/login");
     } else {
       toast({
         type: "success",
         title: "Account created",
         description: "Welcome to Stockfolio! Setting up your dashboard.",
       });
-      router.push("/dashboard/inventory");
+      router.push("/dashboard");
     }
   };
 

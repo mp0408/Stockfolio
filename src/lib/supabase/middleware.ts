@@ -1,15 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-/**
- * Refreshes the user's Supabase auth session on every request.
- * Must be called in middleware to keep sessions alive and
- * prevent stale cookies from breaking auth.
- */
+// Refreshes Supabase auth session on every request and handles route protection
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,17 +14,10 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          // Update request cookies (for downstream Server Components)
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-
-          // Create a new response with updated cookies
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-
-          // Set cookies on the response (for the browser)
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -39,27 +26,31 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the session — this is the key operation.
-  // Do NOT remove this line. It triggers cookie refresh.
+  // Refresh session — required for cookie refresh
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected routes: redirect unauthenticated users to /login
-  const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard");
+  // Protected routes — redirect unauthenticated users to /login
+  const protectedPrefixes = ["/dashboard", "/inventory", "/ai-insights", "/activity", "/settings"];
+  const isProtectedRoute = protectedPrefixes.some((prefix) =>
+    request.nextUrl.pathname.startsWith(prefix)
+  );
+
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // Auth routes: redirect authenticated users to the dashboard
-  const isAuthRoute =
-    request.nextUrl.pathname === "/login" ||
-    request.nextUrl.pathname === "/signup";
+  // Auth routes — redirect authenticated users to the dashboard
+  const authRoutes = ["/login", "/signup", "/forgot-password"];
+  const isAuthRoute = authRoutes.includes(request.nextUrl.pathname);
+
+  // Allow /reset-password even for authenticated users (they need it for the flow)
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard/inventory";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 

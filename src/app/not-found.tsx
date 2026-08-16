@@ -24,7 +24,7 @@ export default function NotFound() {
         </p>
 
         <Link
-          href="/dashboard/inventory"
+          href="/dashboard"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[var(--radius-sm)] font-medium text-sm bg-accent text-accent-foreground hover:bg-accent-hover active:scale-[0.98] transition-default"
         >
           <ArrowLeft className="w-4 h-4" />

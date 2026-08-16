@@ -22,10 +22,7 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   const onSubmit = async (data: LoginFormData) => {
@@ -34,13 +31,13 @@ export default function LoginPage() {
       toast({ type: "error", title: "Sign in failed", description: error });
     } else {
       toast({ type: "success", title: "Welcome back!" });
-      router.push("/dashboard/inventory");
+      router.push("/dashboard");
     }
   };
 
   return (
     <div>
-      {/* Mobile branding (shown only on small screens) */}
+      {/* Mobile branding */}
       <div className="lg:hidden mb-8">
         <h1
           className="text-3xl font-bold text-foreground tracking-tight"
@@ -48,7 +45,9 @@ export default function LoginPage() {
         >
           Stockfolio
         </h1>
-        <p className="text-text-secondary mt-1">Your inventory, portfolio-grade.</p>
+        <p className="text-text-secondary mt-1">
+          Your inventory, portfolio-grade.
+        </p>
       </div>
 
       <div className="mb-8">
@@ -61,7 +60,7 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        {/* Email field */}
+        {/* Email */}
         <div>
           <label
             htmlFor="login-email"
@@ -90,14 +89,22 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Password field */}
+        {/* Password */}
         <div>
-          <label
-            htmlFor="login-password"
-            className="block text-sm font-medium text-foreground mb-1.5"
-          >
-            Password
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label
+              htmlFor="login-password"
+              className="block text-sm font-medium text-foreground"
+            >
+              Password
+            </label>
+            <Link
+              href="/forgot-password"
+              className="text-xs text-accent hover:text-accent-hover font-medium transition-default"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <div className="relative">
             <input
               id="login-password"
@@ -133,18 +140,11 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Submit button */}
+        {/* Submit */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className={`
-            w-full flex items-center justify-center gap-2 px-4 py-2.5
-            rounded-[var(--radius-sm)] font-medium text-sm
-            bg-accent text-accent-foreground
-            hover:bg-accent-hover active:scale-[0.98]
-            transition-default
-            disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
-          `}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-[var(--radius-sm)] font-medium text-sm bg-accent text-accent-foreground hover:bg-accent-hover active:scale-[0.98] transition-default disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
         >
           {isSubmitting ? (
             <Loader2 className="w-4 h-4 animate-spin" />
