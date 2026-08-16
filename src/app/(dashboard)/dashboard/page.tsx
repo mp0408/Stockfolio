@@ -17,6 +17,22 @@ import {
   Brain,
 } from "lucide-react";
 
+const CATEGORY_NAMES: Record<string, string> = {
+  SHO: "Shoes & Footwear",
+  BAG: "Bags & Backpacks",
+  RUN: "Running Shoes",
+  SNK: "Sneakers & Casual",
+  FRM: "Formal & Dress Shoes",
+  BTS: "Boots & Outdoor",
+  SND: "Sandals & Slides",
+  TRN: "Training & Gym",
+  KID: "Kids Footwear",
+};
+
+function formatCategoryName(prefix: string): string {
+  return CATEGORY_NAMES[prefix] || prefix;
+}
+
 export default function DashboardPage() {
   const { profile, store } = useAuth();
   const { products, isLoading } = useInventory();
@@ -245,7 +261,7 @@ export default function DashboardPage() {
                 <div key={cat.name}>
                   <div className="flex items-center justify-between text-sm mb-1.5">
                     <span className="text-text-secondary font-medium">
-                      {cat.name}
+                      {formatCategoryName(cat.name)}
                     </span>
                     <span
                       className="text-text-tertiary"

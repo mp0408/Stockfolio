@@ -53,20 +53,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const supabase = createClient();
 
-  // Fetches profile and store, auto-creates them if missing (self-healing)
+  // Fetches profile and store with automatic retry & self-healing fallback
   const fetchProfileAndStore = useCallback(
     async (userObj: User) => {
       const userId = userObj.id;
 
+      // Try initial query
       let { data: profile } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
         .maybeSingle();
 
+      // If profile is not found yet (e.g. database trigger taking a split second), retry once
+      if (!profile) {
+        await new Promise((res) => setTimeout(res, 350));
+        const retryResult = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+        profile = retryResult.data;
+      }
+
       let store: Store | null = null;
 
-      // Self-healing: create store + profile if they don't exist yet
+      // Self-healing: create store + profile if database trigger did not run
       if (!profile && userObj) {
         const meta = userObj.user_metadata || {};
         const storeName = meta.store_name || "My Store";
@@ -74,19 +86,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           meta.full_name || userObj.email?.split("@")[0] || "Store Manager";
         const role = meta.role || "manager";
 
-        const { data: newStore } = await supabase
+        // Check if store already exists for user
+        const { data: existingStore } = await supabase
           .from("stores")
-          .insert({ name: storeName, owner_id: userId })
-          .select()
+          .select("*")
+          .eq("owner_id", userId)
           .maybeSingle();
 
-        if (newStore) {
-          store = newStore as Store;
+        let activeStore = existingStore as Store | null;
+
+        if (!activeStore) {
+          const { data: newStore } = await supabase
+            .from("stores")
+            .insert({ name: storeName, owner_id: userId })
+            .select()
+            .maybeSingle();
+          activeStore = newStore as Store | null;
+        }
+
+        if (activeStore) {
+          store = activeStore;
           const { data: newProfile } = await supabase
             .from("profiles")
             .insert({
               id: userId,
-              store_id: newStore.id,
+              store_id: activeStore.id,
               full_name: fullName,
               role: role,
             })
@@ -144,7 +168,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ) {
           return {
             error:
-              "Email rate limit exceeded. Please wait a few minutes and try again.",
+              "Email rate limit reached. Please wait a moment or disable email confirmation in Supabase.",
+          };
+        }
+        if (
+          authError.message.toLowerCase().includes("already registered") ||
+          authError.message.toLowerCase().includes("user already exists")
+        ) {
+          return {
+            error:
+              "An account with this email already exists. Please sign in or reset your password.",
           };
         }
         return { error: authError.message };
@@ -154,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: "Failed to create account. Please try again." };
       }
 
-      // Supabase user enumeration protection — empty identities = duplicate email
+      // Supabase enumeration protection — empty identities array means email already taken
       if (authData.user.identities && authData.user.identities.length === 0) {
         return {
           error:
@@ -162,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // Email confirmation required — no session yet
+      // Email confirmation required — no session created immediately
       if (!authData.session) {
         return { error: null, needsEmailConfirmation: true };
       }
@@ -193,13 +226,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          return { error: "Incorrect email or password. Please try again." };
+        if (
+          error.message.toLowerCase().includes("invalid login credentials") ||
+          error.message.toLowerCase().includes("invalid_grant")
+        ) {
+          return {
+            error:
+              "Incorrect email or password. Please verify your credentials or sign up.",
+          };
         }
         if (error.message.toLowerCase().includes("email not confirmed")) {
           return {
             error:
-              "Please check your email and click the confirmation link before signing in.",
+              "Email not verified yet. Please check your inbox or disable email confirmation in your Supabase Auth settings.",
           };
         }
         return { error: error.message };

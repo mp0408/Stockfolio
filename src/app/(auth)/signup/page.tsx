@@ -55,6 +55,7 @@ export default function SignupPage() {
         title: "Account created",
         description: "Welcome to Stockfolio! Setting up your dashboard.",
       });
+      router.refresh();
       router.push("/dashboard");
     }
   };

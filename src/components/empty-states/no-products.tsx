@@ -33,7 +33,7 @@ export function NoProducts({ onAddProduct, onSeedDemo, isSeeding }: NoProductsPr
         No products yet
       </h3>
       <p className="text-text-secondary max-w-sm mb-6 leading-relaxed">
-        Add your first product to start tracking stock levels, or load 30 pre-configured demo items to explore the portfolio.
+        Add your first product to start tracking stock levels, or load 20 pre-configured Shoes & Bags demo items to explore the portfolio.
       </p>
 
       <div className="flex flex-wrap items-center justify-center gap-3">
@@ -68,7 +68,7 @@ export function NoProducts({ onAddProduct, onSeedDemo, isSeeding }: NoProductsPr
             ) : (
               <Sparkles className="w-4 h-4 text-accent" />
             )}
-            {isSeeding ? "Loading demo items…" : "Load 38 Demo Products"}
+            {isSeeding ? "Loading demo items…" : "Load 20 Shoes & Bags"}
           </button>
         )}
       </div>

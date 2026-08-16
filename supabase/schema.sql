@@ -1,14 +1,30 @@
 -- ==============================================================================
--- STOCKFOLIO — 001 INITIAL SCHEMA & AUTO-SEED TRIGGER
+-- STOCKFOLIO — COMPLETE & PERFECT SUPABASE DATABASE SCHEMA
 -- ==============================================================================
--- Idempotent schema definition with complete RLS, indexes, and automated 20 dummy
--- products (Shoes & Bags) seeded whenever a new user signs up.
+-- Instructions:
+-- Copy and paste this entire script into your Supabase Dashboard -> SQL Editor
+-- and click "RUN". It is 100% idempotent (safe to run multiple times).
+--
+-- Features included:
+-- 1. All Tables (stores, profiles, products, inventory_logs) with constraints & cascade rules
+-- 2. Complete Row Level Security (RLS) policies for full multi-tenant isolation
+-- 3. Automatic updated_at timestamps
+-- 4. Automatic user setup trigger (creates store + profile on signup)
+-- 5. Automatic 20 Dummy Products (10 Shoes + 10 Bags) and initial audit logs seeded
+--    automatically whenever ANY new user signs up or logs in!
+-- 6. Retroactive auto-seed for all existing empty stores
 -- ==============================================================================
 
--- Enable UUID extension
+-- ==============================================================================
+-- 1. EXTENSIONS
+-- ==============================================================================
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Stores
+-- ==============================================================================
+-- 2. TABLES & STRUCTURE
+-- ==============================================================================
+
+-- ── 2.1 STORES TABLE ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.stores (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name       TEXT NOT NULL,
@@ -16,7 +32,7 @@ CREATE TABLE IF NOT EXISTS public.stores (
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Profiles
+-- ── 2.2 PROFILES TABLE (Extends auth.users) ──────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.profiles (
   id         UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   store_id   UUID REFERENCES public.stores(id) ON DELETE SET NULL,
@@ -26,7 +42,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Products
+-- ── 2.3 PRODUCTS TABLE ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.products (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   store_id            UUID REFERENCES public.stores(id) ON DELETE CASCADE NOT NULL,
@@ -38,7 +54,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   updated_at          TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Inventory logs
+-- ── 2.4 INVENTORY LOGS (Audit Trail) ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.inventory_logs (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id     UUID REFERENCES public.products(id) ON DELETE CASCADE NOT NULL,
@@ -52,7 +68,9 @@ CREATE TABLE IF NOT EXISTS public.inventory_logs (
   created_at     TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
--- Indexes
+-- ==============================================================================
+-- 3. INDEXES FOR PERFORMANCE
+-- ==============================================================================
 CREATE UNIQUE INDEX IF NOT EXISTS idx_products_store_sku ON public.products(store_id, sku);
 CREATE INDEX IF NOT EXISTS idx_products_store ON public.products(store_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_store ON public.profiles(store_id);
@@ -61,13 +79,17 @@ CREATE INDEX IF NOT EXISTS idx_logs_product ON public.inventory_logs(product_id)
 CREATE INDEX IF NOT EXISTS idx_logs_store ON public.inventory_logs(store_id);
 CREATE INDEX IF NOT EXISTS idx_logs_created_at ON public.inventory_logs(created_at DESC);
 
--- Enable RLS
+-- ==============================================================================
+-- 4. ROW LEVEL SECURITY (RLS) POLICIES
+-- ==============================================================================
+
+-- Enable RLS on all tables
 ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inventory_logs ENABLE ROW LEVEL SECURITY;
 
--- Stores policies
+-- ── 4.1 STORES POLICIES ──────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Users can view their own store" ON public.stores;
 CREATE POLICY "Users can view their own store"
   ON public.stores FOR SELECT
@@ -84,7 +106,7 @@ CREATE POLICY "Owners can update their store"
   USING (owner_id = auth.uid())
   WITH CHECK (owner_id = auth.uid());
 
--- Profiles policies
+-- ── 4.2 PROFILES POLICIES ────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 CREATE POLICY "Users can view their own profile"
   ON public.profiles FOR SELECT
@@ -101,7 +123,7 @@ CREATE POLICY "Users can update their own profile"
   USING (id = auth.uid())
   WITH CHECK (id = auth.uid());
 
--- Products policies
+-- ── 4.3 PRODUCTS POLICIES ────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Users can only access their store products" ON public.products;
 CREATE POLICY "Users can only access their store products"
   ON public.products FOR SELECT
@@ -133,7 +155,7 @@ CREATE POLICY "Users can delete their store products"
     store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
   );
 
--- Inventory logs policies
+-- ── 4.4 INVENTORY LOGS POLICIES ──────────────────────────────────────────────
 DROP POLICY IF EXISTS "Users can view their store logs" ON public.inventory_logs;
 CREATE POLICY "Users can view their store logs"
   ON public.inventory_logs FOR SELECT
@@ -148,7 +170,9 @@ CREATE POLICY "Users can insert logs for their store"
     store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
   );
 
--- Timestamp trigger
+-- ==============================================================================
+-- 5. AUTOMATIC TIMESTAMP UPDATES (Trigger)
+-- ==============================================================================
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -163,7 +187,9 @@ CREATE TRIGGER set_products_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_updated_at();
 
--- Seeding helper function (20 Shoes & Bags)
+-- ==============================================================================
+-- 6. DEMO DATA SEED FUNCTION (20 Shoes & Bags)
+-- ==============================================================================
 CREATE OR REPLACE FUNCTION public.seed_store_demo_inventory(
   target_store_id UUID,
   target_user_id UUID
@@ -177,6 +203,7 @@ DECLARE
   inserted_count INT := 0;
   new_prod_id UUID;
 BEGIN
+  -- List of 20 realistic Shoes and Bags items
   FOR prod_row IN
     SELECT * FROM (VALUES
       -- 10 Shoes & Footwear
@@ -203,6 +230,7 @@ BEGIN
       ('Modular Padded Camera & Tech Gear Backpack', 'BAG-CAM-TECH', 2, 3)
     ) AS t(name, sku, quantity, low_stock_threshold)
   LOOP
+    -- Insert product only if SKU does not already exist in store
     INSERT INTO public.products (store_id, name, sku, quantity, low_stock_threshold)
     VALUES (target_store_id, prod_row.name, prod_row.sku, prod_row.quantity, prod_row.low_stock_threshold)
     ON CONFLICT (store_id, sku) DO NOTHING
@@ -211,6 +239,7 @@ BEGIN
     IF new_prod_id IS NOT NULL THEN
       inserted_count := inserted_count + 1;
 
+      -- Add corresponding initial audit log
       INSERT INTO public.inventory_logs (
         product_id,
         store_id,
@@ -233,7 +262,13 @@ BEGIN
 END;
 $$;
 
--- Automatic store, profile and demo seeding trigger on signup
+-- ==============================================================================
+-- 7. AUTOMATIC USER & STORE SIGNUP TRIGGER
+-- ==============================================================================
+-- When ANY user signs up or is created in Supabase Auth, this trigger automatically:
+-- 1. Creates their Store
+-- 2. Creates their Profile
+-- 3. Automatically seeds 20 Shoes & Bags products + logs into their store!
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 SECURITY DEFINER SET search_path = public
@@ -249,19 +284,19 @@ BEGIN
   user_full_name := COALESCE(new.raw_user_meta_data->>'full_name', split_part(COALESCE(new.email, 'user'), '@', 1));
   user_role := COALESCE(new.raw_user_meta_data->>'role', 'manager');
 
-  -- Create store
+  -- 1. Create store for the new user
   INSERT INTO public.stores (name, owner_id)
   VALUES (default_store_name, new.id)
   RETURNING id INTO new_store_id;
 
-  -- Create profile
+  -- 2. Create profile linked to the new store
   INSERT INTO public.profiles (id, store_id, full_name, role)
   VALUES (new.id, new_store_id, user_full_name, user_role)
   ON CONFLICT (id) DO UPDATE SET
     store_id = COALESCE(public.profiles.store_id, EXCLUDED.store_id),
     full_name = COALESCE(public.profiles.full_name, EXCLUDED.full_name);
 
-  -- Automatically seed 20 Shoes & Bags items + audit logs
+  -- 3. Automatically seed 20 dummy products (Shoes & Bags) and logs
   PERFORM public.seed_store_demo_inventory(new_store_id, new.id);
 
   RETURN new;
@@ -276,7 +311,10 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
--- Retroactive seeding for any existing empty stores
+-- ==============================================================================
+-- 8. RETROACTIVE SEED FOR ALL EXISTING EMPTY STORES
+-- ==============================================================================
+-- Automatically populates any existing store that currently has 0 products
 DO $$
 DECLARE
   st RECORD;

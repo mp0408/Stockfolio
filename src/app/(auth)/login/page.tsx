@@ -31,6 +31,7 @@ export default function LoginPage() {
       toast({ type: "error", title: "Sign in failed", description: error });
     } else {
       toast({ type: "success", title: "Welcome back!" });
+      router.refresh();
       router.push("/dashboard");
     }
   };
@@ -72,7 +73,7 @@ export default function LoginPage() {
             id="login-email"
             type="email"
             autoComplete="email"
-            placeholder="you@company.com"
+            placeholder="Enter your email"
             className={`
               w-full px-4 py-2.5 rounded-[var(--radius-sm)] border
               bg-surface text-foreground placeholder:text-text-tertiary

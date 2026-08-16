@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { DEMO_PRODUCTS } from "@/lib/demo-products";
@@ -30,15 +30,78 @@ interface UseInventoryReturn {
 /**
  * Inventory management hook.
  * Fetches products for the user's store, provides CRUD operations
- * with optimistic UI updates and audit logging.
+ * with optimistic UI updates, auto-seeding on first login, and audit logging.
  */
 export function useInventory(): UseInventoryReturn {
   const { user, profile } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasAttemptedAutoSeed = useRef(false);
 
   const supabase = createClient();
+
+  /**
+   * Seed demo inventory items (20 shoes & bags) into the user's store.
+   */
+  const seedDemoProducts = useCallback(async (): Promise<{ count: number; error: string | null }> => {
+    if (!profile?.store_id || !user) {
+      return { count: 0, error: "No active store or session found." };
+    }
+
+    setIsLoading(true);
+
+    const { data: existing } = await supabase
+      .from("products")
+      .select("sku")
+      .eq("store_id", profile.store_id);
+
+    const existingSkus = new Set((existing || []).map((p) => p.sku));
+    const toInsert = DEMO_PRODUCTS.filter((p) => !existingSkus.has(p.sku)).map((p) => ({
+      store_id: profile.store_id,
+      name: p.name,
+      sku: p.sku,
+      quantity: p.quantity,
+      low_stock_threshold: p.low_stock_threshold,
+    }));
+
+    if (toInsert.length === 0) {
+      setIsLoading(false);
+      return { count: 0, error: "Demo products are already loaded in this store." };
+    }
+
+    const { data: inserted, error: insertErr } = await supabase
+      .from("products")
+      .insert(toInsert)
+      .select();
+
+    if (insertErr) {
+      setIsLoading(false);
+      return { count: 0, error: insertErr.message };
+    }
+
+    if (inserted && inserted.length > 0) {
+      const logs = inserted.map((p) => ({
+        product_id: p.id,
+        store_id: profile.store_id,
+        change_type: "manual_adjust" as const,
+        quantity_delta: p.quantity,
+        note: "Initial demo inventory loaded",
+        created_by: user.id,
+      }));
+      await supabase.from("inventory_logs").insert(logs);
+    }
+
+    const { data: refreshed } = await supabase
+      .from("products")
+      .select("*")
+      .eq("store_id", profile.store_id)
+      .order("created_at", { ascending: false });
+
+    setProducts((refreshed as Product[]) || []);
+    setIsLoading(false);
+    return { count: inserted?.length || 0, error: null };
+  }, [profile?.store_id, user, supabase]);
 
   /**
    * Fetch all products for the current user's store.
@@ -65,9 +128,16 @@ export function useInventory(): UseInventoryReturn {
       return;
     }
 
-    setProducts(data as Product[]);
+    const loadedProducts = (data as Product[]) || [];
+    setProducts(loadedProducts);
     setIsLoading(false);
-  }, [profile?.store_id, supabase]);
+
+    // If store has 0 products on initial login/load, auto-seed the 20 Shoes & Bags catalog
+    if (loadedProducts.length === 0 && !hasAttemptedAutoSeed.current && user) {
+      hasAttemptedAutoSeed.current = true;
+      seedDemoProducts();
+    }
+  }, [profile?.store_id, user, supabase, seedDemoProducts]);
 
   // Fetch products when the profile loads
   useEffect(() => {
@@ -217,61 +287,6 @@ export function useInventory(): UseInventoryReturn {
     },
     [products, supabase]
   );
-
-  /**
-   * Seed 38 demo inventory items into the store.
-   */
-  const seedDemoProducts = useCallback(async (): Promise<{ count: number; error: string | null }> => {
-    if (!profile?.store_id || !user) {
-      return { count: 0, error: "No active store or session found." };
-    }
-
-    setIsLoading(true);
-
-    const { data: existing } = await supabase
-      .from("products")
-      .select("sku")
-      .eq("store_id", profile.store_id);
-
-    const existingSkus = new Set((existing || []).map((p) => p.sku));
-    const toInsert = DEMO_PRODUCTS.filter((p) => !existingSkus.has(p.sku)).map((p) => ({
-      store_id: profile.store_id,
-      name: p.name,
-      sku: p.sku,
-      quantity: p.quantity,
-      low_stock_threshold: p.low_stock_threshold,
-    }));
-
-    if (toInsert.length === 0) {
-      setIsLoading(false);
-      return { count: 0, error: "Demo products are already loaded in this store." };
-    }
-
-    const { data: inserted, error: insertErr } = await supabase
-      .from("products")
-      .insert(toInsert)
-      .select();
-
-    if (insertErr) {
-      setIsLoading(false);
-      return { count: 0, error: insertErr.message };
-    }
-
-    if (inserted && inserted.length > 0) {
-      const logs = inserted.map((p) => ({
-        product_id: p.id,
-        store_id: profile.store_id,
-        change_type: "manual_adjust" as const,
-        quantity_delta: p.quantity,
-        note: "Initial demo inventory load",
-        created_by: user.id,
-      }));
-      await supabase.from("inventory_logs").insert(logs);
-    }
-
-    await fetchProducts();
-    return { count: inserted?.length || 0, error: null };
-  }, [profile?.store_id, user, supabase, fetchProducts]);
 
   return {
     products,

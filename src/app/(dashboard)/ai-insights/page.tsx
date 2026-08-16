@@ -1,6 +1,6 @@
- "use client";
+"use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useInventory } from "@/hooks/use-inventory";
 import { getStockStatus } from "@/lib/types";
 import type { Product } from "@/lib/types";
@@ -14,11 +14,60 @@ import {
   XCircle,
   Zap,
   ArrowRight,
+  Sparkles,
+  RefreshCw,
+  Lightbulb,
+  ShieldAlert,
+  Coins,
 } from "lucide-react";
 import Link from "next/link";
 
+interface AIReport {
+  summary: string;
+  urgentActions: string[];
+  recommendations: string[];
+  riskLevel: "low" | "medium" | "high";
+  savingsTip: string;
+  source: string;
+}
+
 export default function AIInsightsPage() {
   const { products, isLoading } = useInventory();
+  const [aiReport, setAiReport] = useState<AIReport | null>(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
+  const fetchAIReport = useCallback(async () => {
+    if (products.length === 0) return;
+    setIsGeneratingAI(true);
+    try {
+      const res = await fetch("/api/ai-insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          products: products.map((p) => ({
+            name: p.name,
+            sku: p.sku,
+            quantity: p.quantity,
+            low_stock_threshold: p.low_stock_threshold,
+          })),
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiReport(data);
+      }
+    } catch (err) {
+      console.error("Failed to load AI report:", err);
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  }, [products]);
+
+  useEffect(() => {
+    if (products.length > 0 && !aiReport) {
+      fetchAIReport();
+    }
+  }, [products, aiReport, fetchAIReport]);
 
   // Products that need reordering (low stock or out of stock)
   const reorderAlerts = useMemo(() => {
@@ -54,10 +103,14 @@ export default function AIInsightsPage() {
 
   // Category health analysis
   const categoryHealth = useMemo(() => {
-    const cats: Record<string, { total: number; inStock: number; lowStock: number; outOfStock: number }> = {};
+    const cats: Record<
+      string,
+      { total: number; inStock: number; lowStock: number; outOfStock: number }
+    > = {};
     for (const p of products) {
       const prefix = p.sku.split("-")[0] || "OTHER";
-      if (!cats[prefix]) cats[prefix] = { total: 0, inStock: 0, lowStock: 0, outOfStock: 0 };
+      if (!cats[prefix])
+        cats[prefix] = { total: 0, inStock: 0, lowStock: 0, outOfStock: 0 };
       cats[prefix].total++;
       const status = getStockStatus(p);
       if (status === "in_stock") cats[prefix].inStock++;
@@ -78,7 +131,9 @@ export default function AIInsightsPage() {
     const total = products.length;
     if (total === 0) return null;
     const outOfStock = products.filter((p) => p.quantity <= 0).length;
-    const lowStock = products.filter((p) => getStockStatus(p) === "low_stock").length;
+    const lowStock = products.filter(
+      (p) => getStockStatus(p) === "low_stock"
+    ).length;
     const criticalRatio = ((outOfStock + lowStock) / total) * 100;
 
     let overallStatus: "good" | "warning" | "critical" = "good";
@@ -105,22 +160,122 @@ export default function AIInsightsPage() {
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6">
       {/* Page header */}
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-[var(--radius-sm)] bg-accent/10 flex items-center justify-center shrink-0">
-          <Brain className="w-5 h-5 text-accent" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-[var(--radius-sm)] bg-accent/10 flex items-center justify-center shrink-0">
+            <Brain className="w-5 h-5 text-accent" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1
+                className="text-3xl font-bold text-foreground tracking-tight"
+                style={{ fontFamily: "Fraunces, Georgia, serif" }}
+              >
+                AI Insights
+              </h1>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent/15 text-accent border border-accent/20">
+                <Sparkles className="w-3 h-3" />
+                Smart Inventory AI
+              </span>
+            </div>
+            <p className="text-text-secondary mt-1">
+              Smart analysis and supply chain intelligence for your inventory.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1
-            className="text-3xl font-bold text-foreground tracking-tight"
-            style={{ fontFamily: "Fraunces, Georgia, serif" }}
-          >
-            AI Insights
-          </h1>
-          <p className="text-text-secondary mt-1">
-            Smart analysis and recommendations for your inventory.
-          </p>
-        </div>
+
+        <button
+          onClick={fetchAIReport}
+          disabled={isGeneratingAI || products.length === 0}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--radius-sm)] font-medium text-sm bg-surface border border-border text-foreground hover:bg-surface-secondary transition-default disabled:opacity-50"
+        >
+          <RefreshCw
+            className={`w-4 h-4 text-accent ${isGeneratingAI ? "animate-spin" : ""}`}
+          />
+          {isGeneratingAI ? "Analyzing inventory..." : "Refresh Insights"}
+        </button>
       </div>
+
+      {/* Strategic Analysis Card */}
+      {aiReport && (
+        <div className="p-6 rounded-[var(--radius-md)] border border-accent/30 bg-gradient-to-br from-surface to-surface-secondary shadow-[var(--shadow-md)] relative overflow-hidden">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center text-accent">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  Strategic Inventory Briefing
+                </h2>
+                <p className="text-xs text-text-tertiary">
+                  Powered by Stockfolio Intelligence Engine
+                </p>
+              </div>
+            </div>
+            <span
+              className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
+                aiReport.riskLevel === "high"
+                  ? "bg-[var(--status-out-of-stock-bg)] text-[var(--status-out-of-stock)] border border-[var(--status-out-of-stock-border)]"
+                  : aiReport.riskLevel === "medium"
+                    ? "bg-[var(--status-low-stock-bg)] text-[var(--status-low-stock)] border border-[var(--status-low-stock-border)]"
+                    : "bg-[var(--status-in-stock-bg)] text-[var(--status-in-stock)] border border-[var(--status-in-stock-border)]"
+              }`}
+            >
+              {aiReport.riskLevel} Risk
+            </span>
+          </div>
+
+          <p className="text-sm text-foreground leading-relaxed mb-5">
+            {aiReport.summary}
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-border">
+            {/* Urgent Restock */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--status-out-of-stock)] uppercase tracking-wider">
+                <ShieldAlert className="w-4 h-4" />
+                Priority Actions
+              </div>
+              <ul className="space-y-1.5">
+                {aiReport.urgentActions.map((action, i) => (
+                  <li key={i} className="text-xs text-text-secondary flex items-start gap-1.5">
+                    <span className="text-[var(--status-out-of-stock)] mt-0.5">•</span>
+                    <span>{action}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Strategic Recommendations */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-accent uppercase tracking-wider">
+                <Lightbulb className="w-4 h-4" />
+                Growth Tactics
+              </div>
+              <ul className="space-y-1.5">
+                {aiReport.recommendations.map((rec, i) => (
+                  <li key={i} className="text-xs text-text-secondary flex items-start gap-1.5">
+                    <span className="text-accent mt-0.5">•</span>
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Cash Flow Optimization */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--status-in-stock)] uppercase tracking-wider">
+                <Coins className="w-4 h-4" />
+                Cost Efficiency
+              </div>
+              <p className="text-xs text-text-secondary leading-relaxed bg-surface/50 p-2.5 rounded-[var(--radius-sm)] border border-border">
+                {aiReport.savingsTip}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Overall status banner */}
       {insightsSummary && (
@@ -135,11 +290,11 @@ export default function AIInsightsPage() {
         >
           <div className="flex items-center gap-3">
             {insightsSummary.overallStatus === "critical" ? (
-              <XCircle className="w-5 h-5 text-[var(--status-out-of-stock)]" />
+              <XCircle className="w-5 h-5 text-[var(--status-out-of-stock)] shrink-0" />
             ) : insightsSummary.overallStatus === "warning" ? (
-              <AlertTriangle className="w-5 h-5 text-[var(--status-low-stock)]" />
+              <AlertTriangle className="w-5 h-5 text-[var(--status-low-stock)] shrink-0" />
             ) : (
-              <CheckCircle className="w-5 h-5 text-[var(--status-in-stock)]" />
+              <CheckCircle className="w-5 h-5 text-[var(--status-in-stock)] shrink-0" />
             )}
             <div>
               <p className="text-sm font-semibold text-foreground">
@@ -321,7 +476,6 @@ export default function AIInsightsPage() {
   );
 }
 
-// Reusable insight card wrapper
 function InsightCard({
   title,
   icon,
@@ -366,7 +520,6 @@ function InsightCard({
   );
 }
 
-// Product row for alert lists
 function ProductRow({ product }: { product: Product }) {
   const isOut = product.quantity <= 0;
   return (
@@ -390,7 +543,6 @@ function ProductRow({ product }: { product: Product }) {
   );
 }
 
-// Empty insight state
 function EmptyInsight({ message }: { message: string }) {
   return (
     <div className="text-center py-6">
