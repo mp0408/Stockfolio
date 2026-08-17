@@ -34,6 +34,7 @@ export function UserBadge({
     <div className={cn("flex items-center gap-3", className)}>
       {/* Avatar / Initials circle */}
       {avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={avatarUrl}
           alt={fullName}

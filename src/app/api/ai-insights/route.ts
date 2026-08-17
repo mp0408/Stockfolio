@@ -101,6 +101,7 @@ export async function POST(request: Request) {
       source: "inventory-engine",
     });
   } catch (error) {
+    console.error("Error generating inventory recommendations:", error);
     return NextResponse.json(
       { error: "Failed to generate inventory recommendations." },
       { status: 500 }
