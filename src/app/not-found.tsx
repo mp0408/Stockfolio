@@ -12,10 +12,7 @@ export default function NotFound() {
           <PackageX className="w-8 h-8 text-text-tertiary" />
         </div>
 
-        <h1
-          className="text-4xl font-bold text-foreground mb-3"
-          style={{ fontFamily: "Fraunces, Georgia, serif" }}
-        >
+        <h1 className="text-4xl font-bold text-foreground mb-3">
           Page not found
         </h1>
         <p className="text-text-secondary leading-relaxed mb-8">

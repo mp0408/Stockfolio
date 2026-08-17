@@ -167,10 +167,7 @@ export default function AIInsightsPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1
-                className="text-3xl font-bold text-foreground tracking-tight"
-                style={{ fontFamily: "Fraunces, Georgia, serif" }}
-              >
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">
                 AI Insights
               </h1>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent/15 text-accent border border-accent/20">

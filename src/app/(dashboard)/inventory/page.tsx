@@ -110,10 +110,7 @@ export default function InventoryPage() {
       {/* ── Page Header ──────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1
-            className="text-3xl font-bold text-foreground tracking-tight"
-            style={{ fontFamily: "Fraunces, Georgia, serif" }}
-          >
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">
             Inventory
           </h1>
           <p className="text-text-secondary mt-1">

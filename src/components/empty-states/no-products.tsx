@@ -26,10 +26,7 @@ export function NoProducts({ onAddProduct, onSeedDemo, isSeeding }: NoProductsPr
         <Package className="w-8 h-8 text-accent" />
       </div>
 
-      <h3
-        className="text-xl font-semibold text-foreground mb-2"
-        style={{ fontFamily: "Fraunces, Georgia, serif" }}
-      >
+      <h3 className="text-xl font-semibold text-foreground mb-2">
         No products yet
       </h3>
       <p className="text-text-secondary max-w-sm mb-6 leading-relaxed">

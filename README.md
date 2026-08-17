@@ -47,7 +47,7 @@ A production-ready inventory stock management dashboard for warehouse and store 
 | Styling | Tailwind CSS v4 with custom design tokens |
 | Forms | react-hook-form + Zod schema validation |
 | Icons | Lucide React |
-| Fonts | Geist (sans/mono) + Fraunces (display) |
+| Fonts | Inter (clean, modern sans-serif) + Geist Mono |
 
 ## Getting Started
 
@@ -71,23 +71,28 @@ cp .env.local.example .env.local
 
 Edit `.env.local` with your Supabase project URL and anon key (found in Settings → API).
 
-### 3. Set Up Database
+### 3. Set Up Database (1-Click in Supabase SQL Editor)
 
-Go to your Supabase project → SQL Editor and run the contents of:
+Go to your **Supabase Dashboard → SQL Editor**, create a **New Query**, and paste the entire contents of:
 
 ```
-supabase/migrations/001_initial_schema.sql
+supabase/schema.sql
 ```
 
-This creates all tables (`stores`, `profiles`, `products`, `inventory_logs`), indexes, RLS policies, and auto-provisioning triggers.
+Click **Run**. This all-in-one script will:
+- Create all 4 tables (`stores`, `profiles`, `products`, `inventory_logs`)
+- Set up complete Row Level Security (RLS) policies
+- Create performance indexes and triggers
+- Automatically provision user profile & store on signup
+- **Auto-seed 20 demo items (Shoes & Bags)** for every user upon signup!
 
-### 4. Seed Demo Data (Optional)
+### 4. Seed Demo Data (Optional CLI)
 
 ```bash
 npm run seed
 ```
 
-This will prompt for a password and create an account with 30 shoe products.
+This optional Node.js CLI script will create a test user and seed products via the Supabase API.
 
 ### 5. Start Development Server
 
@@ -168,7 +173,7 @@ Stock status is always derived from `quantity` vs `low_stock_threshold`, never s
 - Warm off-white (`#FAFAF8`) / near-black (`#0B0C0E`) base palette
 - Deep teal accent (`#1A7A6D` light, `#2DD4B8` dark)
 - Muted status colors with icon pairing for accessibility
-- Fraunces display font + Geist sans/mono for premium typography
+- Inter typography (clean, modern neutral sans-serif body 400, headings 500–600) + Geist Mono
 
 ## License
 

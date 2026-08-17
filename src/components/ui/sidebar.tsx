@@ -87,10 +87,7 @@ export function Sidebar() {
             <Package className="w-4 h-4 text-accent-foreground" />
           </div>
           {!collapsed && (
-            <span
-              className="text-lg font-bold text-foreground tracking-tight truncate"
-              style={{ fontFamily: "Fraunces, Georgia, serif" }}
-            >
+            <span className="text-lg font-bold text-foreground tracking-tight truncate">
               Stockfolio
             </span>
           )}

@@ -81,10 +81,7 @@ export default function ForgotPasswordPage() {
     <div>
       {/* Mobile branding */}
       <div className="lg:hidden mb-8">
-        <h1
-          className="text-3xl font-bold text-foreground tracking-tight"
-          style={{ fontFamily: "Fraunces, Georgia, serif" }}
-        >
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">
           Stockfolio
         </h1>
         <p className="text-text-secondary mt-1">

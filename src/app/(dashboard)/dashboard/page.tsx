@@ -70,10 +70,7 @@ export default function DashboardPage() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6">
       {/* Page header */}
       <div>
-        <h1
-          className="text-3xl font-bold text-foreground tracking-tight"
-          style={{ fontFamily: "Fraunces, Georgia, serif" }}
-        >
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">
           Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
         </h1>
         <p className="text-text-secondary mt-1">

@@ -24,10 +24,7 @@ export function NoResults({ searchQuery, activeFilter }: NoResultsProps) {
         <Search className="w-8 h-8 text-text-tertiary" />
       </div>
 
-      <h3
-        className="text-xl font-semibold text-foreground mb-2"
-        style={{ fontFamily: "Fraunces, Georgia, serif" }}
-      >
+      <h3 className="text-xl font-semibold text-foreground mb-2">
         No matching products
       </h3>
       <p className="text-text-secondary max-w-sm leading-relaxed">

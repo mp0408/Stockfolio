@@ -56,10 +56,7 @@ export default function SettingsPage() {
     <div className="p-4 sm:p-6 max-w-2xl mx-auto w-full space-y-8">
       {/* Header */}
       <div>
-        <h1
-          className="text-3xl font-bold text-foreground tracking-tight"
-          style={{ fontFamily: "Fraunces, Georgia, serif" }}
-        >
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">
           Settings
         </h1>
         <p className="text-text-secondary mt-1">

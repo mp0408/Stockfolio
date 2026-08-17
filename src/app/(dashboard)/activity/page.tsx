@@ -77,10 +77,7 @@ export default function ActivityPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1
-            className="text-3xl font-bold text-foreground tracking-tight"
-            style={{ fontFamily: "Fraunces, Georgia, serif" }}
-          >
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">
             Activity
           </h1>
           <p className="text-text-secondary mt-1">
@@ -121,10 +118,7 @@ export default function ActivityPage() {
       ) : filteredLogs.length === 0 ? (
         <div className="text-center py-16">
           <Activity className="w-12 h-12 text-text-tertiary mx-auto mb-3" />
-          <h3
-            className="text-xl font-semibold text-foreground mb-2"
-            style={{ fontFamily: "Fraunces, Georgia, serif" }}
-          >
+          <h3 className="text-xl font-semibold text-foreground mb-2">
             No activity yet
           </h3>
           <p className="text-text-secondary">

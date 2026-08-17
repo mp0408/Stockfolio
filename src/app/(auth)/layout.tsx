@@ -34,10 +34,7 @@ export default function AuthLayout({
 
         {/* Branding content */}
         <div className="relative z-10 max-w-md px-8 text-white">
-          <h1
-            className="text-5xl font-bold tracking-tight mb-4"
-            style={{ fontFamily: "Fraunces, Georgia, serif" }}
-          >
+          <h1 className="text-5xl font-bold tracking-tight mb-4">
             Stockfolio
           </h1>
           <p className="text-xl text-white/70 leading-relaxed">
