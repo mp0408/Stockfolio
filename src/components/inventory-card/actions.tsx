@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useInventoryCard } from "./index";
+import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/components/ui/toast";
 import {
   Plus,
@@ -14,9 +15,12 @@ import {
 /**
  * InventoryCard.Actions — increase/decrease stock, mark reordered, delete.
  * All actions write to inventory_logs for audit trail.
+ * Deletion is restricted strictly to Warehouse Managers.
  */
 export function InventoryCardActions() {
   const { product, onUpdateStock, onDelete } = useInventoryCard();
+  const { profile } = useAuth();
+  const isManager = profile?.role === "manager";
   const { toast } = useToast();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
@@ -130,39 +134,41 @@ export function InventoryCardActions() {
         Reorder
       </button>
 
-      {/* Delete product */}
-      <button
-        onClick={() =>
-          handleAction("delete", async () => {
-            const result = await onDelete(product.id);
-            if (!result.error) {
-              toast({
-                type: "success",
-                title: "Product removed",
-                description: `${product.name} has been deleted.`,
-              });
-            }
-            return result;
-          })
-        }
-        disabled={isLoading}
-        className={`
-          flex items-center justify-center w-9 h-9
-          rounded-[var(--radius-sm)] border border-border
-          bg-surface hover:bg-status-out-of-stock-bg
-          text-text-tertiary hover:text-[var(--status-out-of-stock)]
-          transition-default
-          disabled:opacity-40 disabled:cursor-not-allowed
-        `}
-        aria-label="Delete product"
-        title="Delete product"
-      >
-        {loadingAction === "delete" ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <Trash2 className="w-4 h-4" />
-        )}
-      </button>
+      {/* Delete product — Managers only */}
+      {isManager && (
+        <button
+          onClick={() =>
+            handleAction("delete", async () => {
+              const result = await onDelete(product.id);
+              if (!result.error) {
+                toast({
+                  type: "success",
+                  title: "Product removed",
+                  description: `${product.name} has been deleted.`,
+                });
+              }
+              return result;
+            })
+          }
+          disabled={isLoading}
+          className={`
+            flex items-center justify-center w-9 h-9
+            rounded-[var(--radius-sm)] border border-border
+            bg-surface hover:bg-status-out-of-stock-bg
+            text-text-tertiary hover:text-[var(--status-out-of-stock)]
+            transition-default
+            disabled:opacity-40 disabled:cursor-not-allowed
+          `}
+          aria-label="Delete product"
+          title="Delete product (Manager only)"
+        >
+          {loadingAction === "delete" ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+        </button>
+      )}
     </div>
   );
 }

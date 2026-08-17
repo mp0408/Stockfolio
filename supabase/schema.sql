@@ -93,7 +93,10 @@ ALTER TABLE public.inventory_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view their own store" ON public.stores;
 CREATE POLICY "Users can view their own store"
   ON public.stores FOR SELECT
-  USING (owner_id = auth.uid());
+  USING (
+    owner_id = auth.uid() OR
+    id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
+  );
 
 DROP POLICY IF EXISTS "Users can create a store on signup" ON public.stores;
 CREATE POLICY "Users can create a store on signup"
@@ -101,10 +104,17 @@ CREATE POLICY "Users can create a store on signup"
   WITH CHECK (owner_id = auth.uid());
 
 DROP POLICY IF EXISTS "Owners can update their store" ON public.stores;
-CREATE POLICY "Owners can update their store"
+DROP POLICY IF EXISTS "Managers can update their store" ON public.stores;
+CREATE POLICY "Managers can update their store"
   ON public.stores FOR UPDATE
-  USING (owner_id = auth.uid())
-  WITH CHECK (owner_id = auth.uid());
+  USING (
+    owner_id = auth.uid() AND
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'manager')
+  )
+  WITH CHECK (
+    owner_id = auth.uid() AND
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'manager')
+  );
 
 -- ── 4.2 PROFILES POLICIES ────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
@@ -124,6 +134,7 @@ CREATE POLICY "Users can update their own profile"
   WITH CHECK (id = auth.uid());
 
 -- ── 4.3 PRODUCTS POLICIES ────────────────────────────────────────────────────
+-- Both Managers & Staff can view their store products
 DROP POLICY IF EXISTS "Users can only access their store products" ON public.products;
 CREATE POLICY "Users can only access their store products"
   ON public.products FOR SELECT
@@ -131,13 +142,16 @@ CREATE POLICY "Users can only access their store products"
     store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
   );
 
+-- Only Warehouse Managers can insert new products into the store catalog
 DROP POLICY IF EXISTS "Users can insert products for their store" ON public.products;
-CREATE POLICY "Users can insert products for their store"
+DROP POLICY IF EXISTS "Managers can insert products for their store" ON public.products;
+CREATE POLICY "Managers can insert products for their store"
   ON public.products FOR INSERT
   WITH CHECK (
-    store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
+    store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid() AND role = 'manager')
   );
 
+-- Both Managers & Staff can update product stock quantities & reorder status
 DROP POLICY IF EXISTS "Users can update their store products" ON public.products;
 CREATE POLICY "Users can update their store products"
   ON public.products FOR UPDATE
@@ -148,11 +162,13 @@ CREATE POLICY "Users can update their store products"
     store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
   );
 
+-- ONLY Warehouse Managers can delete products from the catalog
 DROP POLICY IF EXISTS "Users can delete their store products" ON public.products;
-CREATE POLICY "Users can delete their store products"
+DROP POLICY IF EXISTS "Managers can delete their store products" ON public.products;
+CREATE POLICY "Managers can delete their store products"
   ON public.products FOR DELETE
   USING (
-    store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid())
+    store_id = (SELECT store_id FROM public.profiles WHERE id = auth.uid() AND role = 'manager')
   );
 
 -- ── 4.4 INVENTORY LOGS POLICIES ──────────────────────────────────────────────

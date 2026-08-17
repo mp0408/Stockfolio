@@ -8,6 +8,7 @@ import {
   type AddProductFormData,
 } from "@/lib/validators/product";
 import { useInventory } from "@/hooks/use-inventory";
+import { useAuth } from "@/context/auth-context";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useStockSummary } from "@/hooks/use-stock-summary";
 import { useToast } from "@/components/ui/toast";
@@ -32,6 +33,9 @@ import {
 type FilterStatus = "all" | StockStatus;
 
 export default function InventoryPage() {
+  const { profile } = useAuth();
+  const isManager = profile?.role === "manager";
+
   const { products, isLoading, error, addProduct, updateStock, deleteProduct, seedDemoProducts } =
     useInventory();
   const { toast } = useToast();
@@ -117,42 +121,44 @@ export default function InventoryPage() {
             Manage your products and track stock levels in real time.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            onClick={handleSeedDemo}
-            disabled={isSeeding}
-            className={`
-              inline-flex items-center gap-2 px-3.5 py-2.5
-              rounded-[var(--radius-sm)] font-medium text-sm
-              border border-border bg-surface text-foreground
-              hover:bg-surface-secondary active:scale-[0.98]
-              transition-default disabled:opacity-50 disabled:cursor-not-allowed
-            `}
-            title="Load or refresh the 20 Shoes & Bags sample inventory"
-          >
-            {isSeeding ? (
-              <Loader2 className="w-4 h-4 animate-spin text-accent" />
-            ) : (
-              <Sparkles className="w-4 h-4 text-accent" />
-            )}
-            <span className="hidden sm:inline">Load Demo Catalog</span>
-            <span className="sm:hidden">Demo</span>
-          </button>
+        {isManager && (
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              onClick={handleSeedDemo}
+              disabled={isSeeding}
+              className={`
+                inline-flex items-center gap-2 px-3.5 py-2.5
+                rounded-[var(--radius-sm)] font-medium text-sm
+                border border-border bg-surface text-foreground
+                hover:bg-surface-secondary active:scale-[0.98]
+                transition-default disabled:opacity-50 disabled:cursor-not-allowed
+              `}
+              title="Load or refresh the 20 Shoes & Bags sample inventory"
+            >
+              {isSeeding ? (
+                <Loader2 className="w-4 h-4 animate-spin text-accent" />
+              ) : (
+                <Sparkles className="w-4 h-4 text-accent" />
+              )}
+              <span className="hidden sm:inline">Load Demo Catalog</span>
+              <span className="sm:hidden">Demo</span>
+            </button>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className={`
-              inline-flex items-center gap-2 px-4 py-2.5
-              rounded-[var(--radius-sm)] font-medium text-sm
-              bg-accent text-accent-foreground
-              hover:bg-accent-hover active:scale-[0.98]
-              transition-default
-            `}
-          >
-            <Plus className="w-4 h-4" />
-            Add Product
-          </button>
-        </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className={`
+                inline-flex items-center gap-2 px-4 py-2.5
+                rounded-[var(--radius-sm)] font-medium text-sm
+                bg-accent text-accent-foreground
+                hover:bg-accent-hover active:scale-[0.98]
+                transition-default
+              `}
+            >
+              <Plus className="w-4 h-4" />
+              Add Product
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Stock Health Summary ──────────────────── */}
@@ -297,6 +303,7 @@ export default function InventoryPage() {
           onAddProduct={() => setShowAddModal(true)}
           onSeedDemo={handleSeedDemo}
           isSeeding={isSeeding}
+          isManager={isManager}
         />
       ) : filteredProducts.length === 0 ? (
         <NoResults searchQuery={debouncedSearch} activeFilter={activeFilter} />

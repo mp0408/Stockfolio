@@ -81,6 +81,7 @@ export default function SettingsPage() {
       {/* Store settings section */}
       <StoreSection
         store={store}
+        profile={profile}
         supabase={supabase}
         toast={toast}
         refreshProfile={refreshProfile}
@@ -298,18 +299,22 @@ function PasswordSection({
   );
 }
 
-// Store settings section
+// Store settings section (Manager only editing)
 function StoreSection({
   store,
+  profile,
   supabase,
   toast,
   refreshProfile,
 }: {
   store: ReturnType<typeof useAuth>["store"];
+  profile: ReturnType<typeof useAuth>["profile"];
   supabase: ReturnType<typeof createClient>;
   toast: ReturnType<typeof useToast>["toast"];
   refreshProfile: () => Promise<void>;
 }) {
+  const isManager = profile?.role === "manager";
+
   const {
     register,
     handleSubmit,
@@ -320,7 +325,7 @@ function StoreSection({
   });
 
   const onSubmit = async (data: StoreFormData) => {
-    if (!store) return;
+    if (!store || !isManager) return;
     const { error } = await supabase
       .from("stores")
       .update({ name: data.storeName })
@@ -335,7 +340,14 @@ function StoreSection({
   };
 
   return (
-    <SettingsCard title="Store" icon={<Store className="w-5 h-5" />}>
+    <SettingsCard title="Store Settings" icon={<Store className="w-5 h-5" />}>
+      {!isManager && (
+        <div className="mb-4 p-3 rounded-[var(--radius-sm)] bg-surface-secondary border border-border text-xs text-text-secondary flex items-center gap-2">
+          <Settings className="w-4 h-4 text-text-tertiary shrink-0" />
+          <span>Store settings can only be modified by the Warehouse Manager.</span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label
@@ -347,7 +359,8 @@ function StoreSection({
           <input
             id="settings-store"
             type="text"
-            className={`${inputStyles} ${errors.storeName ? "border-[var(--status-out-of-stock)]" : "border-border"}`}
+            disabled={!isManager}
+            className={`${inputStyles} ${errors.storeName ? "border-[var(--status-out-of-stock)]" : "border-border"} ${!isManager ? "opacity-60 cursor-not-allowed" : ""}`}
             {...register("storeName")}
           />
           {errors.storeName && (
@@ -357,20 +370,22 @@ function StoreSection({
           )}
         </div>
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--radius-sm)] font-medium text-sm bg-accent text-accent-foreground hover:bg-accent-hover transition-default disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            Save changes
-          </button>
-        </div>
+        {isManager && (
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-[var(--radius-sm)] font-medium text-sm bg-accent text-accent-foreground hover:bg-accent-hover transition-default disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              Save changes
+            </button>
+          </div>
+        )}
       </form>
     </SettingsCard>
   );
